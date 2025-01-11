@@ -1,0 +1,88 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
+    background: #000;
+}
+
+.score-board {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(15, 30px);
+    grid-template-rows: repeat(15, 30px);
+    gap: 1px;
+    background: #111;
+    border: 2px solid #00f;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    background: #000;
+}
+
+.wall {
+    background: #00f;
+}
+
+.player {
+    background: yellow;
+    border-radius: 50%;
+}
+
+.ghost {
+    border-radius: 50%;
+}
+
+.pellet {
+    background: #fff;
+    border-radius: 50%;
+    width: 8px;
+    height: 8px;
+    margin: 11px;
+}
+
+.power-pellet {
+    background: #fff;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    margin: 7px;
+}
+
+@media (max-width: 600px) {
+    #game-board {
+        grid-template-columns: repeat(15, 20px);
+        grid-template-rows: repeat(15, 20px);
+    }
+
+    .cell {
+        width: 20px;
+        height: 20px;
+    }
+
+    .pellet {
+        width: 6px;
+        height: 6px;
+        margin: 7px;
+    }
+
+    .power-pellet {
+        width: 12px;
+        height: 12px;
+        margin: 4px;
+    }
+} 

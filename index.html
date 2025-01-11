@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        /* Styles are the same as your original code */
+        /* Ensure visuals align correctly */
+      
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        #game-board {
+            width: 400px;
+            height: 400px;
+            border: 4px solid #ffffff;
+            position: relative;
+            background: #000000;
+        }
+
+        .snake-segment {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(90deg, #4CAF50 50%, white 50%);
+            position: absolute;
+            border-radius: 4px;
+        }
+
+        .food {
+            width: 20px;
+            height: 20px;
+            background: #ff4444;
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .bonus-food {
+            width: 20px;
+            height: 20px;
+            background: #ffd700;
+            position: absolute;
+            border-radius: 50%;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.2); }
+        }
+
+        #score {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #ff4444;
+            display: none;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 0 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        #startPauseBtn.paused {
+            background: #ff4444;
+        }
+
+        #joystick-container {
+            margin-top: 20px;
+        }
+
+        #joystick {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            background: red;
+            border-radius: 50%;
+        }
+
+        #joystick button {
+            background: white;
+        }
+        #button-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Default button style */
+#button-controls button {
+    width: 60px;
+    height: 40px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+/* Highlight effect when active */
+#button-controls button.active {
+    background-color: #ff9800; /* Bright orange to indicate active state */
+    box-shadow: 0 0 10px #ff9800; /* Glowing effect */
+    transform: scale(1.1); /* Slightly enlarge for better visual feedback */
+}
+
+/* Optional hover styling for better UX */
+#button-controls button:hover {
+    background-color: #45a049;
+}
+
+
+
+    </style>
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div class="controls">
+        <button id="startPauseBtn">Start</button>
+        <button id="resetBtn">Reset</button>
+        <label>
+            <input type="radio" name="controlMode" value="joystick" checked> Joystick
+        </label>
+        <label>
+            <input type="radio" name="controlMode" value="buttons"> Buttons
+        </label>
+    </div>
+    <div id="game-board">
+        <div class="game-over">Game Over!</div>
+    </div>
+    <div id="button-controls" style="display: none;">
+        <button id="upBtn">Up</button>
+        <div>
+            <button id="leftBtn">Left</button>
+            <button id="downBtn">Down</button>
+            <button id="rightBtn">Right</button>
+        </div>
+    </div>
+    <div id="joystick-container">
+        <div id="joystick"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.8.0/dist/nipplejs.min.js"></script>
+    <script>
+        class Snake {
+            constructor() {
+                this.segments = [{ x: 0, y: 0 }];
+                this.direction = 'right';
+                this.nextDirection = 'right';
+                this.gridSize = 20;
+                this.boardWidth = 400;
+                this.boardHeight = 400;
+                this.food = this.generateFood();
+                this.score = 0;
+                this.isPaused = true;
+                this.gameLoop = null;
+                this.speed = 150;
+                this.gameOver = false;
+
+                this.setupJoystick();
+                this.setupEventListeners();
+                this.render();
+            }
+
+            setupEventListeners() {
+    document.getElementById('startPauseBtn').addEventListener('click', () => {
+        if (this.gameOver) {
+            this.reset();
+            this.startGameLoop();
+        } else if (this.isPaused) {
+            this.startGameLoop();
+        } else {
+            this.stopGameLoop();
+        }
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        this.reset();
+    });
+
+    document.querySelectorAll('input[name="controlMode"]').forEach(radio => {
+        radio.addEventListener('change', (event) => {
+            if (event.target.value === 'joystick') {
+                document.getElementById('joystick-container').style.display = 'block';
+                document.getElementById('button-controls').style.display = 'none';
+            } else {
+                document.getElementById('joystick-container').style.display = 'none';
+                document.getElementById('button-controls').style.display = 'flex';
+            }
+        });
+    });
+
+    document.getElementById('upBtn').addEventListener('click', () => this.setDirection('up'));
+    document.getElementById('downBtn').addEventListener('click', () => this.setDirection('down'));
+    document.getElementById('leftBtn').addEventListener('click', () => this.setDirection('left'));
+    document.getElementById('rightBtn').addEventListener('click', () => this.setDirection('right'));
+
+    // Arrow key controls
+    // Arrow key feedback
+    document.addEventListener('keydown', (event) => {
+    if (this.isPaused || this.gameOver) return;
+
+    let button;
+    switch (event.key) {
+        case 'ArrowUp':
+            this.setDirection('up');
+            button = document.getElementById('upBtn');
+            break;
+        case 'ArrowDown':
+            this.setDirection('down');
+            button = document.getElementById('downBtn');
+            break;
+        case 'ArrowLeft':
+            this.setDirection('left');
+            button = document.getElementById('leftBtn');
+            break;
+        case 'ArrowRight':
+            this.setDirection('right');
+            button = document.getElementById('rightBtn');
+            break;
+    }
+
+    if (button) {
+        button.classList.add('active');
+    }
+});
+
+document.addEventListener('keyup', (event) => {
+    let button;
+    switch (event.key) {
+        case 'ArrowUp':
+            button = document.getElementById('upBtn');
+            break;
+        case 'ArrowDown':
+            button = document.getElementById('downBtn');
+            break;
+        case 'ArrowLeft':
+            button = document.getElementById('leftBtn');
+            break;
+        case 'ArrowRight':
+            button = document.getElementById('rightBtn');
+            break;
+    }
+
+    if (button) {
+        button.classList.remove('active');
+    }
+});
+
+
+            }
+            setupJoystick() {
+                const joystick = nipplejs.create({
+                    zone: document.getElementById('joystick'),
+                    mode: 'static',
+                    position: { left: '50%', top: '50%' },
+                    color: 'black',
+                    size: 150
+                });
+
+                joystick.on('move', (event, data) => {
+                    if (!data.direction || this.isPaused || this.gameOver) return;
+                    const { angle } = data;
+                    if (angle.degree >= 45 && angle.degree < 135) this.setDirection('up');
+                    if (angle.degree >= 135 && angle.degree < 225) this.setDirection('left');
+                    if (angle.degree >= 225 && angle.degree < 315) this.setDirection('down');
+                    if (angle.degree >= 315 || angle.degree < 45) this.setDirection('right');
+                });
+            }
+
+            startGameLoop() {
+                this.isPaused = false;
+                document.getElementById('startPauseBtn').textContent = 'Pause';
+                this.gameLoop = setInterval(() => {
+                    if (!this.gameOver) {
+                        this.move();
+                        this.render();
+                    }
+                }, this.speed);
+            }
+
+            stopGameLoop() {
+                clearInterval(this.gameLoop);
+                this.isPaused = true;
+                document.getElementById('startPauseBtn').textContent = 'Start';
+            }
+
+            reset() {
+                this.stopGameLoop();
+                this.segments = [{ x: 0, y: 0 }];
+                this.direction = 'right';
+                this.food = this.generateFood();
+                this.score = 0;
+                this.gameOver = false;
+                this.render();
+            }
+
+            setDirection(newDirection) {
+                const opposite = {
+                    'up': 'down',
+                    'down': 'up',
+                    'left': 'right',
+                    'right': 'left'
+                };
+                if (newDirection !== opposite[this.direction]) {
+                    this.nextDirection = newDirection;
+                }
+            }
+
+            move() {
+                if (this.isPaused || this.gameOver) return;
+                this.direction = this.nextDirection;
+                const head = { ...this.segments[0] };
+
+                switch (this.direction) {
+                    case 'up': head.y -= this.gridSize; break;
+                    case 'down': head.y += this.gridSize; break;
+                    case 'left': head.x -= this.gridSize; break;
+                    case 'right': head.x += this.gridSize; break;
+                }
+
+                  // Handle seamless wall passage
+                  if (head.x < 0) head.x = this.boardWidth - this.gridSize;
+                else if (head.x >= this.boardWidth) head.x = 0;
+                else if (head.y < 0) head.y = this.boardHeight - this.gridSize;
+                else if (head.y >= this.boardHeight) head.y = 0;
+
+                // Check collision with self
+                if (this.segments.some(segment =>
+                    segment.x === head.x && segment.y === head.y)) {
+                    this.endGame();
+                    return;
+                }
+
+                this.segments.unshift(head);
+                if (head.x === this.food.x && head.y === this.food.y) {
+                    this.food = this.generateFood();
+                    this.score += 10;
+                } else {
+                    this.segments.pop();
+                }
+            }
+
+            generateFood() {
+                const x = Math.floor(Math.random() * (this.boardWidth / this.gridSize)) * this.gridSize;
+                const y = Math.floor(Math.random() * (this.boardHeight / this.gridSize)) * this.gridSize;
+                return { x, y };
+            }
+
+            render() {
+                const board = document.getElementById('game-board');
+                board.innerHTML = '<div class="game-over">Game Over!</div>';
+                this.segments.forEach(segment => {
+                    const div = document.createElement('div');
+                    div.className = 'snake-segment';
+                    div.style.left = `${segment.x}px`;
+                    div.style.top = `${segment.y}px`;
+                    board.appendChild(div);
+                });
+
+                const foodDiv = document.createElement('div');
+                foodDiv.className = 'food';
+                foodDiv.style.left = `${this.food.x}px`;
+                foodDiv.style.top = `${this.food.y}px`;
+                board.appendChild(foodDiv);
+            }
+
+            endGame() {
+                this.gameOver = true;
+                this.stopGameLoop();
+                document.querySelector('.game-over').style.display = 'block';
+            }
+        }
+
+        new Snake();
+    </script>
+</body>
+</html>
