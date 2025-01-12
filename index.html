@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snake Game</title>
     <style>
-        /* Styles are the same as your original code */
-        /* Ensure visuals align correctly */
-      
-
+    
         body {
             display: flex;
             flex-direction: column;
@@ -296,7 +293,13 @@
                     case 'left': head.x -= this.gridSize; break;
                     case 'right': head.x += this.gridSize; break;
                 }
+                 // Handle seamless wall passage
+                 if (head.x < 0) head.x = this.boardWidth - this.gridSize;
+                else if (head.x >= this.boardWidth) head.x = 0;
+                else if (head.y < 0) head.y = this.boardHeight - this.gridSize;
+                else if (head.y >= this.boardHeight) head.y = 0;
 
+// Check collision with self
                 if (head.x < 0 || head.x >= this.boardWidth || head.y < 0 || head.y >= this.boardHeight) {
                     this.endGame();
                     return;
