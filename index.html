@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snake Game</title>
     <style>
-    
+        /* Styles are the same as your original code */
+        /* Ensure visuals align correctly */
+      
+
         body {
             display: flex;
             flex-direction: column;
@@ -179,6 +182,10 @@
                 this.boardWidth = 400;
                 this.boardHeight = 400;
                 this.food = this.generateFood();
+                this.bonusFood = null;
+                this.bonusFoodTimer = null;
+                this.bonusFoodScore = 50;
+                this.foodCollected = 0;
                 this.score = 0;
                 this.isPaused = true;
                 this.gameLoop = null;
@@ -293,22 +300,43 @@
                     case 'left': head.x -= this.gridSize; break;
                     case 'right': head.x += this.gridSize; break;
                 }
-                 // Handle seamless wall passage
-                 if (head.x < 0) head.x = this.boardWidth - this.gridSize;
+
+                   // Handle seamless wall passage
+                if (head.x < 0) head.x = this.boardWidth - this.gridSize;
                 else if (head.x >= this.boardWidth) head.x = 0;
                 else if (head.y < 0) head.y = this.boardHeight - this.gridSize;
                 else if (head.y >= this.boardHeight) head.y = 0;
 
-// Check collision with self
-                if (head.x < 0 || head.x >= this.boardWidth || head.y < 0 || head.y >= this.boardHeight) {
+                // Check collision with self
+                if (this.segments.some(segment =>
+                    segment.x === head.x && segment.y === head.y)) {
                     this.endGame();
                     return;
                 }
 
                 this.segments.unshift(head);
+
+                // Check if food is eaten
                 if (head.x === this.food.x && head.y === this.food.y) {
-                    this.food = this.generateFood();
                     this.score += 10;
+                    this.foodCollected++;
+
+                    // Spawn bonus food every 10 regular food items collected
+                    if (this.foodCollected % 10 === 0) {
+                        this.spawnBonusFood();
+                    }
+
+                    document.getElementById('score').textContent = `Score: ${this.score}`;
+                    this.food = this.generateFood();
+                    // Increase speed slightly
+                    this.speed = Math.max(50, this.speed - 2);
+                } else if (this.bonusFood && head.x === this.bonusFood.x && head.y === this.bonusFood.y) {
+                    this.score += this.bonusFoodScore;
+                    document.getElementById('score').textContent = `Score: ${this.score}`;
+                    this.bonusFood = null;
+                    if (this.bonusFoodTimer) {
+                        clearTimeout(this.bonusFoodTimer);
+                    }
                 } else {
                     this.segments.pop();
                 }
@@ -317,34 +345,69 @@
             generateFood() {
                 const x = Math.floor(Math.random() * (this.boardWidth / this.gridSize)) * this.gridSize;
                 const y = Math.floor(Math.random() * (this.boardHeight / this.gridSize)) * this.gridSize;
+
+                // Make sure food doesn't appear on snake
+                if (this.segments.some(segment => segment.x === x && segment.y === y)) {
+                    return this.generateFood();
+                }
+
                 return { x, y };
             }
 
             render() {
                 const board = document.getElementById('game-board');
                 board.innerHTML = '<div class="game-over">Game Over!</div>';
+
+                // Render snake
                 this.segments.forEach(segment => {
-                    const div = document.createElement('div');
-                    div.className = 'snake-segment';
-                    div.style.left = `${segment.x}px`;
-                    div.style.top = `${segment.y}px`;
-                    board.appendChild(div);
+                    const element = document.createElement('div');
+                    element.className = 'snake-segment';
+                    element.style.left = `${segment.x}px`;
+                    element.style.top = `${segment.y}px`;
+                    board.appendChild(element);
                 });
 
-                const foodDiv = document.createElement('div');
-                foodDiv.className = 'food';
-                foodDiv.style.left = `${this.food.x}px`;
-                foodDiv.style.top = `${this.food.y}px`;
-                board.appendChild(foodDiv);
+                // Render regular food
+                const foodElement = document.createElement('div');
+                foodElement.className = 'food';
+                foodElement.style.left = `${this.food.x}px`;
+                foodElement.style.top = `${this.food.y}px`;
+                board.appendChild(foodElement);
+
+                // Render bonus food if it exists
+                if (this.bonusFood) {
+                    const bonusFoodElement = document.createElement('div');
+                    bonusFoodElement.className = 'bonus-food';
+                    bonusFoodElement.style.left = `${this.bonusFood.x}px`;
+                    bonusFoodElement.style.top = `${this.bonusFood.y}px`;
+                    board.appendChild(bonusFoodElement);
+                }
+
+                if (this.gameOver) {
+                    document.querySelector('.game-over').style.display = 'block';
+                }
             }
 
             endGame() {
                 this.gameOver = true;
                 this.stopGameLoop();
-                document.querySelector('.game-over').style.display = 'block';
+                this.render();
+            }
+
+            spawnBonusFood() {
+                this.bonusFood = this.generateFood();
+                // Clear existing bonus food timer if it exists
+                if (this.bonusFoodTimer) clearTimeout(this.bonusFoodTimer);
+
+                // Set timer to remove bonus food after 5 seconds
+                this.bonusFoodTimer = setTimeout(() => {
+                    this.bonusFood = null;
+                    this.render();
+                }, 5000);
             }
         }
 
+        // Start the game
         new Snake();
     </script>
 </body>
