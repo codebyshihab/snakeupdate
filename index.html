@@ -115,6 +115,8 @@
         #joystick button {
             background: white;
         }
+
+        /* New styles for the button controls */
         #button-controls {
     display: flex;
     flex-direction: column;
@@ -122,7 +124,6 @@
     gap: 10px;
 }
 
-/* Default button style */
 #button-controls button {
     width: 60px;
     height: 40px;
@@ -132,21 +133,12 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s, box-shadow 0.2s;
+   
 }
 
-/* Highlight effect when active */
-#button-controls button.active {
-    background-color: #ff9800; /* Bright orange to indicate active state */
-    box-shadow: 0 0 10px #ff9800; /* Glowing effect */
-    transform: scale(1.1); /* Slightly enlarge for better visual feedback */
-}
-
-/* Optional hover styling for better UX */
-#button-controls button:hover {
+#button-controls button:active {
     background-color: #45a049;
 }
-
 
 
     </style>
@@ -168,11 +160,12 @@
         <div class="game-over">Game Over!</div>
     </div>
     <div id="button-controls" style="display: none;">
-        <button id="upBtn">Up</button>
+        <button id="upBtn">↑</button>
         <div>
-            <button id="leftBtn">Left</button>
-            <button id="downBtn">Down</button>
-            <button id="rightBtn">Right</button>
+            <button id="leftBtn">←</button>
+            <button id="downBtn">↓</button>
+            <button id="rightBtn">→</button>
+            
         </div>
     </div>
     <div id="joystick-container">
@@ -201,92 +194,39 @@
             }
 
             setupEventListeners() {
-    document.getElementById('startPauseBtn').addEventListener('click', () => {
-        if (this.gameOver) {
-            this.reset();
-            this.startGameLoop();
-        } else if (this.isPaused) {
-            this.startGameLoop();
-        } else {
-            this.stopGameLoop();
-        }
-    });
+                document.getElementById('startPauseBtn').addEventListener('click', () => {
+                    if (this.gameOver) {
+                        this.reset();
+                        this.startGameLoop();
+                    } else if (this.isPaused) {
+                        this.startGameLoop();
+                    } else {
+                        this.stopGameLoop();
+                    }
+                });
 
-    document.getElementById('resetBtn').addEventListener('click', () => {
-        this.reset();
-    });
+                document.getElementById('resetBtn').addEventListener('click', () => {
+                    this.reset();
+                });
 
-    document.querySelectorAll('input[name="controlMode"]').forEach(radio => {
-        radio.addEventListener('change', (event) => {
-            if (event.target.value === 'joystick') {
-                document.getElementById('joystick-container').style.display = 'block';
-                document.getElementById('button-controls').style.display = 'none';
-            } else {
-                document.getElementById('joystick-container').style.display = 'none';
-                document.getElementById('button-controls').style.display = 'flex';
+                document.querySelectorAll('input[name="controlMode"]').forEach(radio => {
+                    radio.addEventListener('change', (event) => {
+                        if (event.target.value === 'joystick') {
+                            document.getElementById('joystick-container').style.display = 'block';
+                            document.getElementById('button-controls').style.display = 'none';
+                        } else {
+                            document.getElementById('joystick-container').style.display = 'none';
+                            document.getElementById('button-controls').style.display = 'flex';
+                        }
+                    });
+                });
+
+                document.getElementById('upBtn').addEventListener('click', () => this.setDirection('up'));
+                document.getElementById('downBtn').addEventListener('click', () => this.setDirection('down'));
+                document.getElementById('leftBtn').addEventListener('click', () => this.setDirection('left'));
+                document.getElementById('rightBtn').addEventListener('click', () => this.setDirection('right'));
             }
-        });
-    });
 
-    document.getElementById('upBtn').addEventListener('click', () => this.setDirection('up'));
-    document.getElementById('downBtn').addEventListener('click', () => this.setDirection('down'));
-    document.getElementById('leftBtn').addEventListener('click', () => this.setDirection('left'));
-    document.getElementById('rightBtn').addEventListener('click', () => this.setDirection('right'));
-
-    // Arrow key controls
-    // Arrow key feedback
-    document.addEventListener('keydown', (event) => {
-    if (this.isPaused || this.gameOver) return;
-
-    let button;
-    switch (event.key) {
-        case 'ArrowUp':
-            this.setDirection('up');
-            button = document.getElementById('upBtn');
-            break;
-        case 'ArrowDown':
-            this.setDirection('down');
-            button = document.getElementById('downBtn');
-            break;
-        case 'ArrowLeft':
-            this.setDirection('left');
-            button = document.getElementById('leftBtn');
-            break;
-        case 'ArrowRight':
-            this.setDirection('right');
-            button = document.getElementById('rightBtn');
-            break;
-    }
-
-    if (button) {
-        button.classList.add('active');
-    }
-});
-
-document.addEventListener('keyup', (event) => {
-    let button;
-    switch (event.key) {
-        case 'ArrowUp':
-            button = document.getElementById('upBtn');
-            break;
-        case 'ArrowDown':
-            button = document.getElementById('downBtn');
-            break;
-        case 'ArrowLeft':
-            button = document.getElementById('leftBtn');
-            break;
-        case 'ArrowRight':
-            button = document.getElementById('rightBtn');
-            break;
-    }
-
-    if (button) {
-        button.classList.remove('active');
-    }
-});
-
-
-            }
             setupJoystick() {
                 const joystick = nipplejs.create({
                     zone: document.getElementById('joystick'),
@@ -357,15 +297,7 @@ document.addEventListener('keyup', (event) => {
                     case 'right': head.x += this.gridSize; break;
                 }
 
-                  // Handle seamless wall passage
-                  if (head.x < 0) head.x = this.boardWidth - this.gridSize;
-                else if (head.x >= this.boardWidth) head.x = 0;
-                else if (head.y < 0) head.y = this.boardHeight - this.gridSize;
-                else if (head.y >= this.boardHeight) head.y = 0;
-
-                // Check collision with self
-                if (this.segments.some(segment =>
-                    segment.x === head.x && segment.y === head.y)) {
+                if (head.x < 0 || head.x >= this.boardWidth || head.y < 0 || head.y >= this.boardHeight) {
                     this.endGame();
                     return;
                 }
