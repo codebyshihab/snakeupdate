@@ -282,7 +282,8 @@
                 this.score = 0;
                 this.isPaused = true;
                 this.gameLoop = null;
-                this.speed = 150;
+                this.initialSpeed = 150;  // Store initial speed value
+                this.speed = this.initialSpeed;
                 this.gameOver = false;
 
                 this.setupJoystick();
@@ -364,9 +365,17 @@
                 this.stopGameLoop();
                 this.segments = [{ x: 0, y: 0 }];
                 this.direction = 'right';
+                this.nextDirection = 'right';
                 this.food = this.generateFood();
+                this.bonusFood = null;
+                if (this.bonusFoodTimer) {
+                    clearTimeout(this.bonusFoodTimer);
+                }
                 this.score = 0;
+                this.foodCollected = 0;
+                this.speed = this.initialSpeed;  // Reset speed to initial value
                 this.gameOver = false;
+                document.getElementById('score').textContent = `Score: ${this.score}`;
                 this.render();
             }
 
